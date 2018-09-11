@@ -1,4 +1,4 @@
-/* aes.c
+ /* aes.c
  * Code was written: June 7, 2017
  *
  * aes.c implements AES-128, AES-192, and AES-256 for RLCE
@@ -10,6 +10,9 @@
  * Charlotte, NC 28223
  * yonwang@uncc.edu
  *
+ *
+ * 91 - 97
+ * 94 - 100
  */
 #include <stdio.h>
 #include <string.h>
@@ -74,24 +77,31 @@ int main (int argc, char *argv[]) {
 				     0xea,0xfc,0x49,0x90,0x4b,0x49,0x60,0x89};
   testEncryption(msg, cipher,key,expectedcipher256,numofT);
   testDecryption(msg, cipher,key,decryptedmsg,numofT);
-  aeskey_free(key); 
+  aeskey_free(key);
   exit(0);
 }
 
 void testEncryption(unsigned char msg[], unsigned char cipher[],aeskey_t key, unsigned char expectedcipher[],int numofT) {
   int i, failed=0;
-  clock_t start, finish;
-  double seconds;
   AES_encrypt(msg, cipher,key);
   for (i=0;i<16;i++) if (expectedcipher[i] != cipher[i]) failed =1;
   if (failed >0) {
     printf("AES-%d encryption failed\n", (key->keylen)*8);
   } else {
+    /* Moved start and finish variables to new location to remove scope issues. */
+    clock_t start, finish;
+    
     start = clock();
+    
     for (i=0;i<numofT;i++) {
       AES_encrypt(msg, cipher,key);
     }
+  
     finish = clock();
+    
+    /* Moved seconds to new location to remove scope issues. */
+    double seconds;
+    
     seconds = ((double)(finish - start))/CLOCKS_PER_SEC;
     printf("%f seconds for %d times of AES-%d encryption\n",seconds,numofT,(key->keylen)*8);
   }
@@ -99,19 +109,25 @@ void testEncryption(unsigned char msg[], unsigned char cipher[],aeskey_t key, un
 
 void testDecryption(unsigned char msg[], unsigned char cipher[],aeskey_t key, unsigned char decryptedmsg[],int numofT) {
   int i, failed=0;
-  clock_t start, finish;
-  double seconds;
   AES_decrypt(cipher,decryptedmsg, key);
   for (i=0;i<16;i++) if (decryptedmsg[i] != msg[i])  failed =1;
 
   if (failed >0) {
     printf("AES-%d decryption failed\n",(key->keylen)*8);
   } else {
+    /* Moved start and finish to new location to remove scope issues. */
+    clock_t start, finish;
+    
     start = clock();
     for (i=0;i<numofT;i++) {
       AES_decrypt(cipher,decryptedmsg, key);
     }
+  
     finish = clock();
+    
+    /* Moved seconds to new location to remove scope issues. */
+    double seconds;
+    
     seconds = ((double)(finish - start))/CLOCKS_PER_SEC;
     printf("%f seconds for %d times of AES-%d decryption\n",seconds,numofT,(key->keylen)*8);    
   }
@@ -182,6 +198,8 @@ aeskey_t aeskey_init(unsigned short kappa) {
     out->wLen = 240;
     break;
   default:
+    /* Freed out to prevent memory leaks */
+    free(out);
     return NULL;
   }
   out->key = (unsigned char *) calloc(kappa/8, sizeof(unsigned char));
@@ -346,5 +364,8 @@ void AES_decrypt(unsigned char cipher[], unsigned char plain[], aeskey_t key) {
     InvShiftRows(plain);
   }
   for (j=0;j<16;j++) plain[j] ^=w[j];
+  
+  /* Freed w to prevent memory leaks */
+  free(w);
   return;
 }
